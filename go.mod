@@ -1,6 +1,8 @@
 module tgSubChecker
 
-go 1.22
+go 1.22.0
+
+toolchain go1.22.1
 
 require github.com/jackc/pgx/v4 v4.18.3
 

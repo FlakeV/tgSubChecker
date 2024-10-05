@@ -3,12 +3,13 @@ package postgres
 import (
 	"context"
 	"log"
-	"tgSubChecker/internal/models"
-	"tgSubChecker/internal/repo"
 	"time"
 
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+
+	"tgSubChecker/internal/models"
+	"tgSubChecker/internal/repo"
 )
 
 type Saver struct {
@@ -69,16 +70,18 @@ func (s *Saver) NewSub(ctx context.Context, update *models.Update) error {
 		(
 			subscriber_id, 
 			event_type, 
-			event_time
+			event_time,
+			chat_id
 		)
 	VALUES
-		($1, $2, $3)
+		($1, $2, $3, $4)
 	`
 
 	_, err = tx.Exec(ctx, queryEvent,
 		update.ChatMember.NewChatMember.User.ID,
 		repo.EventType[update.ChatMember.NewChatMember.Status],
 		time.Unix(int64(update.ChatMember.Date), 0),
+		update.ChatMember.Chat.ID,
 	)
 
 	if err != nil {
