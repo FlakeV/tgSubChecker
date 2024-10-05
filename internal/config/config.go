@@ -13,7 +13,7 @@ type Config struct {
 
 func NewConfig() (*Config, error) {
 	var cfg Config
-	yamlFile, err := os.ReadFile("../conf.yaml")
+	yamlFile, err := os.ReadFile("./conf.yaml")
 	if err != nil {
 		return nil, err
 	}

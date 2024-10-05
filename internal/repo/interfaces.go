@@ -16,4 +16,5 @@ type Saver interface {
 }
 
 type Reader interface {
+	GetOwner(ctx context.Context, chatId int) (int, error)
 }

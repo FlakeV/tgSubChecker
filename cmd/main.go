@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -23,9 +24,9 @@ var (
 	offset int
 )
 
-func getChatMemberUpdates(offset int, BOT_TOKEN string) *models.Updates {
+func getChatMemberUpdates(offset int, BotToken string) *models.Updates {
 
-	var url = API_URL + BOT_TOKEN + "/getUpdates?offset=" + strconv.Itoa(offset) + "&limit=1&allowed_updates=%5B%22chat_member%22%5D&timeout=100"
+	var url = API_URL + BotToken + "/getUpdates?offset=" + strconv.Itoa(offset) + "&limit=1&allowed_updates=%5B%22chat_member%22%5D&timeout=100"
 	resp, err := http.Get(url)
 	if err != nil {
 		log.Fatal("Get member updates error: ", err)
@@ -41,6 +42,31 @@ func getChatMemberUpdates(offset int, BOT_TOKEN string) *models.Updates {
 		log.Fatal("Unmarshal member updates error: ", err)
 	}
 	return &updates
+}
+
+func sendMessageToOwner(update *models.Update, BotToken string, ownerID int) {
+	var msgText string
+	if update.ChatMember.NewChatMember.Status == "left" {
+		msgText = fmt.Sprintf(
+			"Пользователь %s %s (%d) покинул чат",
+			update.ChatMember.NewChatMember.User.FirstName,
+			update.ChatMember.NewChatMember.User.LastName,
+			update.ChatMember.NewChatMember.User.ID,
+		)
+	} else if update.ChatMember.NewChatMember.Status == "member" {
+		msgText = fmt.Sprintf(
+			"Пользователь %s %s (%d) присоединился к чату",
+			update.ChatMember.NewChatMember.User.FirstName,
+			update.ChatMember.NewChatMember.User.LastName,
+			update.ChatMember.NewChatMember.User.ID,
+		)
+	}
+	var url = API_URL + BotToken + "/sendMessage?chat_id=" + strconv.Itoa(ownerID) + "&text=" + msgText
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Fatal("Send message error: ", err)
+	}
+	defer resp.Body.Close()
 }
 
 func main() {
@@ -64,11 +90,22 @@ func main() {
 	defer dbPool.Close()
 
 	saver := postgres.NewSaver(dbPool)
+	reader := postgres.NewReader(dbPool)
 
 	for {
 		resp := getChatMemberUpdates(offset, appConfig.BotToken)
 		if len(resp.Updates) != 0 {
-			saver.NewSub(ctx, &resp.Updates[0])
+			err = saver.NewSub(ctx, &resp.Updates[0])
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			ownerId, err := reader.GetOwner(ctx, resp.Updates[0].ChatMember.Chat.ID)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			sendMessageToOwner(&resp.Updates[0], appConfig.BotToken, ownerId)
 			offset = resp.Updates[0].UpdateID + 1
 		}
 		for _, update := range resp.Updates {
