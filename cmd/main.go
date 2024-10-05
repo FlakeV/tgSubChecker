@@ -1,17 +1,17 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"log"
 	"net/http"
 	"strconv"
 
-	"context"
+	"github.com/jackc/pgx/v4/pgxpool"
+
 	"tgSubChecker/internal/models"
 	"tgSubChecker/internal/repo/postgres"
-
-	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 const (
@@ -22,6 +22,7 @@ const (
 var (
 	offset int
 )
+
 
 func getChatMemberUpdates(offset int) *models.Updates {
 
