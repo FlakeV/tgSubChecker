@@ -4,7 +4,10 @@ go 1.22.0
 
 toolchain go1.22.1
 
-require github.com/jackc/pgx/v4 v4.18.3
+require (
+	github.com/jackc/pgx/v4 v4.18.3
+	gopkg.in/yaml.v3 v3.0.1
+)
 
 require (
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect

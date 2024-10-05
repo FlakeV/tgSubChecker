@@ -10,21 +10,20 @@ import (
 
 	"github.com/jackc/pgx/v4/pgxpool"
 
+	"tgSubChecker/internal/config"
 	"tgSubChecker/internal/models"
 	"tgSubChecker/internal/repo/postgres"
 )
 
 const (
-	BOT_TOKEN = "6912893670:AAGSdNcrllQygIYHfBu7xwAEA-m8U1l5lmE"
-	API_URL   = "https://api.telegram.org/bot"
+	API_URL = "https://api.telegram.org/bot"
 )
 
 var (
 	offset int
 )
 
-
-func getChatMemberUpdates(offset int) *models.Updates {
+func getChatMemberUpdates(offset int, BOT_TOKEN string) *models.Updates {
 
 	var url = API_URL + BOT_TOKEN + "/getUpdates?offset=" + strconv.Itoa(offset) + "&limit=1&allowed_updates=%5B%22chat_member%22%5D&timeout=100"
 	resp, err := http.Get(url)
@@ -45,10 +44,15 @@ func getChatMemberUpdates(offset int) *models.Updates {
 }
 
 func main() {
-	ctx := context.Background()
-	conStr := "postgresql://localhost:5432/postgres"
+	appConfig, err := config.NewConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	dbConfig, err := pgxpool.ParseConfig(conStr)
+	log.Println(appConfig)
+	ctx := context.Background()
+
+	dbConfig, err := pgxpool.ParseConfig(appConfig.DbUrl)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -62,7 +66,7 @@ func main() {
 	saver := postgres.NewSaver(dbPool)
 
 	for {
-		resp := getChatMemberUpdates(offset)
+		resp := getChatMemberUpdates(offset, appConfig.BotToken)
 		if len(resp.Updates) != 0 {
 			saver.NewSub(ctx, &resp.Updates[0])
 			offset = resp.Updates[0].UpdateID + 1
