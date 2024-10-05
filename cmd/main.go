@@ -6,7 +6,12 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+
+	"context"
 	"tgSubChecker/internal/models"
+	"tgSubChecker/internal/repo/postgres"
+
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 const (
@@ -39,9 +44,26 @@ func getChatMemberUpdates(offset int) *models.Updates {
 }
 
 func main() {
+	ctx := context.Background()
+	conStr := "postgresql://localhost:5432/postgres"
+
+	dbConfig, err := pgxpool.ParseConfig(conStr)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	dbPool, err := pgxpool.ConnectConfig(ctx, dbConfig)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer dbPool.Close()
+
+	saver := postgres.NewSaver(dbPool)
+
 	for {
 		resp := getChatMemberUpdates(offset)
 		if len(resp.Updates) != 0 {
+			saver.NewSub(ctx, &resp.Updates[0])
 			offset = resp.Updates[0].UpdateID + 1
 		}
 		for _, update := range resp.Updates {

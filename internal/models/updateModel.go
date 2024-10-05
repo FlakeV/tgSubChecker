@@ -1,40 +1,5 @@
 package models
 
-//type Chat struct {
-//	ID       int    `json:"id"`
-//	Title    string `json:"title"`
-//	Type     string `json:"type"`
-//	Username string `json:"username"`
-//}
-//
-//type User struct {
-//	FirstName string `json:"first_name"`
-//	ID        int    `json:"id"`
-//	IsBot     bool   `json:"is_bot"`
-//	IsPremium bool   `json:"is_premium"`
-//	LastName  string `json:"last_name"`
-//	Username  string `json:"username"`
-//}
-//
-//type ChatMember struct {
-//	Chat          Chat `json:"chat"`
-//	Date          int  `json:"date"`
-//	From          User `json:"from"`
-//	NewChatMember struct {
-//		Status string `json:"status"`
-//		User   User   `json:"user"`
-//	} `json:"new_chat_member"`
-//	OldChatMember struct {
-//		Status string `json:"status"`
-//		User   User   `json:"user"`
-//	} `json:"old_chat_member"`
-//}
-//
-//type Update struct {
-//	ChatMember ChatMember `json:"chat_member"`
-//	UpdateID   int        `json:"update_id"`
-//}
-
 type Update struct {
 	ChatMember struct {
 		Chat struct {
