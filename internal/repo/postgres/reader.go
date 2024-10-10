@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"tgSubChecker/internal/models"
 	"tgSubChecker/internal/repo"
 )
 
@@ -14,11 +15,27 @@ func NewReader(pool *pgxpool.Pool) repo.Reader {
 	return &Reader{pool: pool}
 }
 
-func (r *Reader) GetOwner(ctx context.Context, chatId int) (int, error) {
-	var ownerID int
-	err := r.pool.QueryRow(ctx, "SELECT owner_id FROM tgSubChecker.channels WHERE id = $1", chatId).Scan(&ownerID)
+func (r *Reader) GetOwner(ctx context.Context, chatId int) (*models.ChannelOwner, error) {
+	var owner models.ChannelOwner
+	err := r.pool.QueryRow(
+		ctx,
+		`
+			SELECT 
+			    owner_id,
+			    notifications
+			FROM 
+			    tgSubChecker.channels 
+			JOIN
+			    tgSubChecker.users 
+			ON
+			    tgSubChecker.channels.owner_id = tgSubChecker.users.id
+			WHERE 
+			    tgSubChecker.channels.id = $1
+			`,
+		chatId,
+	).Scan(&owner.OwnerID, &owner.Notifications)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	return ownerID, nil
+	return &owner, nil
 }

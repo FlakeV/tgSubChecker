@@ -61,7 +61,7 @@ func (s *Saver) NewSub(ctx context.Context, update *models.Update) error {
 	)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error: %v data: %v", err, update.ChatMember.NewChatMember)
 		return err
 	}
 

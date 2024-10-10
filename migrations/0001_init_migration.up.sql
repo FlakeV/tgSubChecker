@@ -6,11 +6,12 @@ CREATE TYPE tgSubChecker.event_type AS ENUM ('subscribed', 'unsubscribed');
 
 CREATE TABLE IF NOT EXISTS tgSubChecker.users (
     id BIGINT PRIMARY KEY,
-    username VARCHAR(80) UNIQUE,
+    username VARCHAR(80),
     first_name VARCHAR(80),
     last_name VARCHAR(80),
     is_bot BOOLEAN,
-    is_premium BOOLEAN
+    is_premium BOOLEAN,
+    notifications BOOLEAN
 );
 
 CREATE TABLE if NOT EXISTS tgSubChecker.channels (
@@ -21,7 +22,7 @@ CREATE TABLE if NOT EXISTS tgSubChecker.channels (
 
 CREATE TABLE IF NOT EXISTS tgSubChecker.subscribers (
     id BIGINT PRIMARY KEY,
-    username VARCHAR(80) UNIQUE,
+    username VARCHAR(80),
     first_name VARCHAR(80),
     last_name VARCHAR(80),
     invate_link VARCHAR(80),

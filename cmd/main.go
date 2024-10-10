@@ -8,6 +8,9 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"sync"
+	"tgSubChecker/internal/repo"
+	"tgSubChecker/internal/repo/csvStorage"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 
@@ -44,7 +47,8 @@ func getChatMemberUpdates(offset int, BotToken string) *models.Updates {
 	return &updates
 }
 
-func sendMessageToOwner(update *models.Update, BotToken string, ownerID int) {
+func sendMessageToOwner(update *models.Update, BotToken string, ownerID int, wg *sync.WaitGroup) {
+	defer wg.Done()
 	var msgText string
 	if update.ChatMember.NewChatMember.Status == "left" {
 		msgText = fmt.Sprintf(
@@ -70,13 +74,20 @@ func sendMessageToOwner(update *models.Update, BotToken string, ownerID int) {
 }
 
 func main() {
+	log.Println("Starting app tgSubChecker")
+	defer log.Println("Finish app tgSubChecker")
+	wg := sync.WaitGroup{}
+	defer wg.Wait()
+
 	appConfig, err := config.NewConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	log.Println(appConfig)
 	ctx := context.Background()
+
+	var reader repo.Reader
+	var saver repo.Saver
 
 	dbConfig, err := pgxpool.ParseConfig(appConfig.DbUrl)
 	if err != nil {
@@ -85,12 +96,14 @@ func main() {
 
 	dbPool, err := pgxpool.ConnectConfig(ctx, dbConfig)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		saver = csvStorage.NewSaver()
+		reader = csvStorage.NewReader()
+	} else {
+		saver = postgres.NewSaver(dbPool)
+		reader = postgres.NewReader(dbPool)
 	}
 	defer dbPool.Close()
-
-	saver := postgres.NewSaver(dbPool)
-	reader := postgres.NewReader(dbPool)
 
 	for {
 		resp := getChatMemberUpdates(offset, appConfig.BotToken)
@@ -100,12 +113,16 @@ func main() {
 				log.Fatal(err)
 			}
 
-			ownerId, err := reader.GetOwner(ctx, resp.Updates[0].ChatMember.Chat.ID)
+			owner, err := reader.GetOwner(ctx, resp.Updates[0].ChatMember.Chat.ID)
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			sendMessageToOwner(&resp.Updates[0], appConfig.BotToken, ownerId)
+			if owner.Notifications {
+				wg.Add(1)
+				go sendMessageToOwner(&resp.Updates[0], appConfig.BotToken, owner.OwnerID, &wg)
+			}
+
 			offset = resp.Updates[0].UpdateID + 1
 		}
 		for _, update := range resp.Updates {
